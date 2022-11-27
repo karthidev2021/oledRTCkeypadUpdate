@@ -1,3 +1,15 @@
+//The following code is for updating the rtc module using keypad and oled itself instead of setting the time by uploading the code
+//This code uses MatrixKeypad.h library. It conatins two method for getting data
+//one is blocking the program until the key pressed.
+//We used the second one which is non-blocking method. we will scan for a certain time frequently
+//so current time will keep on updating on the screen which makes us easier to enter the new data correctly.
+
+//'A'-back
+//'B'-next
+//'F'-terminate 
+
+
+//custom model for handling DateTime object
 class DateTimeModel {
 public:
   int year, month, day, hour, minute, second;
@@ -6,6 +18,10 @@ public:
     return DateTime(year, month, day, hour, minute, second);
   }
 
+
+  //This function will update the model frequently..As it has two arguments both has default value
+  //if data is -1---> update model with current date & time
+  //or else it will update with incoming data value for the specific field
   void updateModel(int field = -1, int data = -1) {
     if (data == -1) {
       year = rtc.now().year();
@@ -15,6 +31,7 @@ public:
       minute = rtc.now().minute();
       second = rtc.now().second();
     } else {
+      //for updating the specific field alone
       switch (field) {
         case 0:
           year = data;
@@ -40,19 +57,22 @@ public:
   }
 };
 
+//object for our custom DateTime model
 DateTimeModel dateTimeModel;
 
-
+//This is the function which can be called anywhere in the program
+// to set the RTC in real time by using keypad & with oled display.
 void rtcSet() {
 
   int fieldCount = 0;
   int lengthCount = 0;
   String data = "";
   long lastScan;
-  int dateTimeLength[6] = { 4, 2, 2, 2, 2, 2 };
+  int dateTimeLength[6] = { 4, 2, 2, 2, 2, 2 };   //defines the length of each field like year,month....(4 digits for 'year', remaining for all fields 2 digit is sufficient)
   char fields[6][6] = {
     { "year" }, { "Mon" }, { "Day" }, { "Hr" }, { "Min" }, { "Sec" }
-  };
+  };//displaying the input field message
+
   dateTimeModel.updateModel();
   while (fieldCount < 6) {
     dateTime = rtc.now();
@@ -66,6 +86,7 @@ void rtcSet() {
     oled.print(data);
     oled.display();
 
+    //Non-blocking method for getting inputs...as per the documentation minimum 100ms is enough to scan if any key is pressed or not..
     if ((millis() - lastScan) > 100) {
       MatrixKeypad_scan(keypad);
       lastScan = millis();
